@@ -5,10 +5,13 @@ const mongoose = require('mongoose')
 
 
 router.get('/', (req, res, next) => {
-    Product.find().exec().then((x)=>{
-        console.log(x)
-        res.status(200).json(x)
-    }).catch((err)=>{
+    Product.find(). select('name price _id') .  exec().then((x) => {
+        const response ={
+            count:x.length,
+            products:x
+        }
+        res.status(200).json(response)
+    }).catch((err) => {
         console.log(err)
     })
 })
@@ -23,26 +26,31 @@ router.post('/', (req, res, next) => {
         price: req.body.price
     })
     product.save().then((x) => {
-        console.log(x)
+        res.status(201).json({
+            message: "The product is added",
+            createdProduct: product
+        })
     }).catch((err) => {
         console.log(err)
+        res.status(400).json({
+            message:err,
+        })
     })
-    res.status(201).json({
-        message: "Handling the post products",
-        createdProduct: product
-    })
+
 })
 
 
 router.get('/:productID', (req, res, next) => {
     const id = req.params.productID
-    Product.findById(id).exec().then((x)=>{
-        if(x ==  null){
-            res.status(400).json({message:"not found"})
-        }
+    Product.findById(id).select('name price _id') . exec().then((x) => {
+        // if(x ==  null){
+        //     res.status(400).json({message:"not found"})
+        // }
         res.status(200).json(x)
-    }).catch((err)=>{
+    }).catch((err) => {
         console.log(err)
+        res.status(400).json({ message: err })
+
     })
 
 })
@@ -51,10 +59,21 @@ router.get('/:productID', (req, res, next) => {
 
 router.patch('/:productID', (req, res, next) => {
     const id = req.params.productID
-    res.status(200).json({
-        message: "update the product",
-        id: id
+    Product.updateOne({ _id: id }, {
+        $set: {
+            name: req.body.name,
+            price: req.body.price
+        }
+    }).exec().then((result)=>{
 
+        res.status(200).json({
+            message: "update the product",
+            id: id,
+            result:result
+    
+        })
+    }).catch((err) =>{
+        res.status(400).json({message:err})
     })
 
 })
@@ -63,13 +82,14 @@ router.patch('/:productID', (req, res, next) => {
 
 router.delete('/:productID', (req, res, next) => {
     const id = req.params.productID
-    Product.deleteOne({_id:id}).then((x)=>{
+    Product.deleteOne({ _id: id }).then((x) => {
         console.log(x, "deleted")
-        res.status(200).json({message:"the product is deleted"})
-    }).catch((err)=>{
+        res.status(200).json({ message: "the product is deleted" })
+    }).catch((err) => {
         console.log(err)
+        res.status(500).json({})
+
     })
-    
     res.status(200).json({
         message: "delete the product",
         id: id
